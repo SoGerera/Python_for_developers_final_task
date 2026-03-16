@@ -1,0 +1,33 @@
+services:
+  pg_db:
+    container_name: pg_db
+    image: postgres:15
+    volumes:
+      - postgres_:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=mfti_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mfti_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: ./src/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@pg_db:5432/mfti_db
+    depends_on:
+      pg_db:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  postgres_:
